@@ -4,13 +4,14 @@ var mysql = require("mysql");
 var bodyParser = require("body-parser");
 var validator = require("aadhaar-validator");
 var SHA256 = require("crypto-js/sha256");
+
 var today = new Date();
 var date =
   today.getFullYear() + "-" + (today.getMonth() + 1) + "-" + today.getDate();
 var time =
   today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
 var dateTime = date + " " + time;
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 class Block {
@@ -25,9 +26,9 @@ class Block {
   calculateHash() {
     return SHA256(
       this.index +
-        this.timestamp +
-        this.previoushash +
-        JSON.stringify(this.data)
+      this.timestamp +
+      this.previoushash +
+      JSON.stringify(this.data)
     ).toString();
   }
 }
@@ -64,15 +65,19 @@ mysqlConnection.connect(err => {
     console.log("Unsuccessful \n Error : " + JSON.stringify(err, undefined, 2));
 });
 
-app.post("/error", function(req, res) {
+app.post("/error", function (req, res) {
   res.writeHead(200, { "content-type": "text/html" });
   res.write(
     "<!DOCTYPE html> <head></head>  <body>  <h1>           Please Enter a Valid Amount For Recharge</h1></body>"
   );
 });
 
-app.post("/entry", function(req, res) {
+
+app.post("/entry", function (req, res) {
   res.writeHead(200, { "content-type": "text/html" });
+
+
+
   var aadhar = req.body.aadharno;
   var amount = req.body.amount;
   var re = 'uid="(.*?)"';
@@ -82,13 +87,14 @@ app.post("/entry", function(req, res) {
   var here2;
   var check = validator.isValidNumber(found[1]);
   // var check = validator.isValidNumber(aadhar);
+
   if (check) {
     console.log("Valid Number " + found[1]);
 
     var here = mysqlConnection.query(
       "select count(*) as count from wallet where aadhar_no = ?",
       [found[1]],
-      function(err, rows, fields) {
+      function (err, rows, fields) {
         //if (err) throw err;
 
         var string = JSON.stringify(rows);
@@ -99,7 +105,7 @@ app.post("/entry", function(req, res) {
           mysqlConnection.query(
             "select balance from wallet where aadhar_no = ?",
             [found[1]],
-            function(err, rows, fields) {
+            function (err, rows, fields) {
               var string = JSON.stringify(rows);
               json = JSON.parse(string);
               here2 = json[0].balance;
@@ -114,10 +120,10 @@ app.post("/entry", function(req, res) {
 
               res.write(
                 "<!DOCTYPE html> <head></head>  <body>  <h1>            Hello, " +
-                  found[1] +
-                  "</h1> <br><h1>Your Wallet Balance is Rs." +
-                  convert +
-                  "</h1></body>"
+                found1[1] +
+                "</h1> <br><h1>Your Wallet Balance is Rs." +
+                convert +
+                "</h1></body>"
               );
             }
           );
@@ -134,10 +140,10 @@ app.post("/entry", function(req, res) {
           savejeecoin.addBlock(new Block(found[1], dateTime, { temp }));
           res.write(
             "<!DOCTYPE html> <head></head>  <body>  <h1>            Hello, " +
-              found[1] +
-              "</h1> <br><h1>Your Wallet Balance is Rs." +
-              amount +
-              "</h1></body>"
+            found1[1] +
+            "</h1> <br><h1>Your Wallet Balance is Rs." +
+            amount +
+            "</h1></body>"
           );
           console.log("New User");
         }
@@ -148,8 +154,14 @@ app.post("/entry", function(req, res) {
     //savejeecoin.addBlock(new Block(found[1], dateTime, { amount: 10 }));
   } else {
     // console.log("Invalid AADHAR no. " + found[1]);
+    res.write(
+      "<!DOCTYPE html> <head></head>  <body> <h1>Please Enter a Valid Aadhar Number </h1></body>"
+    );
     console.log("Invalid AADHAR no. " + aadhar);
   }
+
+
+
   // res.write("Submitted Succesfully");
 });
 app.listen(8001);
